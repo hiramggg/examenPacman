@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PacMan De Hiram</title>
+    <link rel="icon" href="MsPacman.png">
+    <style>
+        body {
+            background-color: black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="1000" height="1000"></canvas>
+    <script>
+        function random_rgba() {
+            const o = Math.round, r = Math.random, s = 255;
+            return 'rgba(' + o(r() * s) + ',' + o(r() * s) + ',' + o(r() * s) + ',' + r().toFixed(1) + ')';
+        }
+
+        function getRandomInt(max) {
+            return Math.floor(Math.random() * max);
+        }
+
+        const canvas = document.getElementById("myCanvas");
+        const ctx = canvas.getContext("2d");
+        let x = 500;
+        let y = 500;
+        let dir = 0;
+        let cuadradoX = 650;
+        let cuadradoY = 650;
+        let pause= false;
+        let score =0;
+        let image= new Image;
+        image.src="Pacman.png";
+        let cereza= new Image;
+        let fresa= new Image;
+        let manzana= new Image;
+        let melon= new Image;
+        let naranja= new Image;
+        fresa.src="fresa.png";
+        cereza.src="cereza.png";
+        manzana.src="manzana.png";
+        melon.src="melon.png";
+        naranja.src="naranjasupongo.png";
+        let comiendo= new Audio;
+        comiendo.src="pacmaneating.mp3";
+        let sirena= new Audio;
+        sirena.src="pacman-siren.mp3";
+        let sirenaRemix= new Audio;
+        sirenaRemix.src="sirenaRemix.mp3";
+        sirenaRemix.loop = true;
+        sirenaRemix.preload = "auto";
+        let inicio= new Audio;
+        inicio.src="pacman-song.mp3";
+        const cuadradoAncho = 40;
+        const cuadradoAlto = 40;
+        let tiempoTotalSegundos = 0;
+        let ultimoUpdate = 0;
+        let tiempoIncremento=1000;
+        let usuarioInteractuado = false;
+
+        
+        //arreglo frutas aleatorias y sguidor de fruta actual
+        const frutas = [cereza, fresa, manzana, melon, naranja];
+        let frutaActual = obtenerFrutaAleatoria();
+
+        //Paredes
+        const paredes = [
+            { x: 100, y: 1, ancho: 800, alto: 25 },
+            { x: 100, y: 975, ancho: 800, alto: 25 },
+
+            //Jugador no quedar atrapado fuera del mapa
+            { x: 100, y: -26, ancho: 800, alto: 25 },
+            { x: 100, y: 1000, ancho: 800, alto: 25 },
+            
+            { x: 0, y: 0, ancho: 25, alto: 470 },
+            { x: 0, y: 550, ancho: 25, alto: 460 },
+
+            //Jugador no quedar atrapado fuera del mapa
+            { x: -26, y: 0, ancho: 25, alto: 470 },
+            { x: -26, y: 550, ancho: 25, alto: 460 },
+
+            { x: 975, y: 0, ancho: 25, alto: 470 },
+            { x: 975, y: 550, ancho: 25, alto: 460 },
+
+            //Jugador no quedar atrapado fuera del mapa
+            { x: 1005, y: 0, ancho: 25, alto: 470 },
+            { x: 1005, y: 550, ancho: 25, alto: 460 },
+        ];
+
+        //fruta aleatoria
+        function obtenerFrutaAleatoria() {
+        const fruitAleatoria = getRandomInt(frutas.length);
+        return frutas[fruitAleatoria];
+}
+
+        //score 
+        function dibujarScore() {
+            ctx.strokeStyle = "rgba(0, 69, 255, 0.8)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.font = "20px Arial";
+            ctx.fillStyle = "black";
+            ctx.fillText("Score: " + score, 35, 48);
+            ctx.strokeText("Score: " + score, 35, 48);
+        }
+        //tiempo
+        function dibujarTiempo(){
+        ctx.strokeStyle = "rgba(0, 69, 255, 0.8)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "black";
+        ctx.fillText("Tiempo: " + formatearTiempo(tiempoTotalSegundos), 850, 48);
+        ctx.strokeText("Tiempo: " + formatearTiempo(tiempoTotalSegundos), 850, 48);
+        }
+
+       
+
+        //repaint y pausa
+        function repaint() {
+    
+        ctx.clearRect(0, 0, 1000, 1000);
+
+    
+    if (!pause) {
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, 1000, 1000);
+    } else {
+        
+        ctx.fillStyle = "rgba(51, 51, 51, 0.8)";
+        ctx.fillRect(0, 0, 1000, 1000);
+
+        
+    }
+
+    
+    dibujarScore();
+    dibujarTiempo();
+ 
+    if (pause) {
+        ctx.font = "50px Arial";
+        ctx.fillStyle = "white"; 
+        ctx.fillText("Pause", 400, 500);
+    }
+}
+
+        //dibujar cuadrado paredes
+        function dibujarCuadrado(x, y, ancho, alto, color) {
+            ctx.beginPath();
+            ctx.rect(x, y, ancho, alto);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = "rgba(0, 69, 255, 0.8)";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+
+        function formatearTiempo(segundos) {
+    const minutos = Math.floor(segundos / 60);
+    const segundosRestantes = segundos % 60;
+    return minutos + ":" + (segundosRestantes < 10 ? "0" : "") + segundosRestantes;
+}
+
+        //dibujar frutas
+        function dibujarObjetivo(x, y, ancho, alto) {
+
+            ctx.drawImage(frutaActual, x, y, ancho, alto);
+        }
+
+        //dibujar pacma
+
+        function dibujarJugador(x, y) {
+            ctx.drawImage(image, x, y, 50, 50);
+        }
+
+        //validar si pacman toca algo
+        function seTocan(x1, y1, w1, h1, x2, y2, w2, h2) {
+            return (
+                x1 < x2 + w2 &&
+                x1 + w1 > x2 &&
+                y1 < y2 + h2 &&
+                y1 + h1 > y2
+                
+            );
+           
+        }
+        
+        //audioInteractuar
+        function reproducirAudioInicio() {
+    if (!usuarioInteractuado) {
+        inicio.play();
+        usuarioInteractuado = true;
+    }
+}
+
+document.body.addEventListener("click", reproducirAudioInicio);
+
+
+
+
+
+
+        function generarCoordenadasFruta() {
+            let frutaX, frutaY;
+            do {
+                frutaX = getRandomInt(960);
+                frutaY = getRandomInt(960);
+            } while (colisionaConParedes(frutaX, frutaY, cuadradoAncho, cuadradoAlto));
+            return { x: frutaX, y: frutaY };
+        }
+
+
+        function colisionaConParedes(x, y, ancho, alto) {
+    for (const pared of paredes) {
+        if (
+            x + ancho > pared.x &&
+            x < pared.x + pared.ancho &&
+            y + alto > pared.y &&
+            y < pared.y + pared.alto
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+        function verificarColisionConFruta() {
+            const coordenadasFruta = generarCoordenadasFruta();
+            const frutaX = coordenadasFruta.x;
+            const frutaY = coordenadasFruta.y;
+
+
+            if (hayColisionParedes(frutaX, frutaY, cuadradoAncho, cuadradoAlto)) {
+                
+                console.log("La fruta colisionó con una pared");
+            }
+        }
+
+        //update con pausas, colision paredes y volver al mapa
+        function update() {
+            
+            //tiempo
+            const currentTime = Date.now();
+            const deltaTime = currentTime - ultimoUpdate; 
+
+
+            const tiempoInicialFormateado = formatearTiempo(tiempoTotalSegundos);
+            if (deltaTime >= tiempoIncremento) {
+            tiempoTotalSegundos += 1;
+            ultimoUpdate = currentTime;
+    }
+
+         
+            repaint();
+            if(!pause){
+
+            switch (dir) {
+                case 87:
+                    if (!hayColisionParedes(x, y - 10, 50, 50)) {
+                        y -= 10;
+                        if (y < 0) { y = 1000 }
+                    }
+                    break;
+
+                case 83:
+                    if (!hayColisionParedes(x, y + 10, 50, 50)) {
+                        y += 10;
+                        if (y > 1000) { y = 0 }
+                    }
+                    break;
+
+                case 65:
+                    if (!hayColisionParedes(x - 10, y, 50, 50)) {
+                        x -= 10;
+                        if (x < 0) { x = 1000 }
+                    }
+                    break;
+
+                case 68:
+                    if (!hayColisionParedes(x + 10, y, 50, 50)) {
+                        x += 10;
+                        if (x > 1000) { x = 0 }
+                    }
+                    break;
+                }
+
+                
+            inicio.addEventListener("ended", function() {
+            sirena.play();
+            });
+            sirena.addEventListener("ended", function() {
+            sirenaRemix.play();
+            });
+            sirenaRemix.addEventListener("ended", function() {
+            this.currentTime = 0; 
+            this.play(); 
+            });
+           
+            generarCoordenadasFruta();
+
+            }
+
+           
+
+            //Si se tocan pacman y frutas
+            if (seTocan(x, y, 50, 50, cuadradoX, cuadradoY, cuadradoAncho, cuadradoAlto)) {
+                cuadradoX = getRandomInt(960);
+                cuadradoY = getRandomInt(960);
+                score +=10;
+                comiendo.play();
+
+                frutaActual = obtenerFrutaAleatoria();
+            }
+
+            //spawn del pacman y frutas
+            dibujarJugador(x, y);
+            dibujarObjetivo(cuadradoX, cuadradoY, cuadradoAncho, cuadradoAlto);
+
+            //dibujar paredes
+            for (const pared of paredes) {
+                dibujarCuadrado(pared.x, pared.y, pared.ancho, pared.alto, "black");
+            }
+
+            window.requestAnimationFrame(update);
+        }
+
+
+        //colision con paredes
+        function hayColisionParedes(x, y, ancho, alto) {
+            for (const pared of paredes) {
+                if (seTocan(x, y, ancho, alto, pared.x, pared.y, pared.ancho, pared.alto)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        //los  pausas y movimientos
+        document.addEventListener("keydown", (e) => {
+            console.log(e);
+
+            switch (e.keyCode) {
+               
+                case 87:
+                case 83:
+                case 65:
+                case 68:
+                if(!pause) dir=e.keyCode;
+                    break;
+
+                case 27:
+                case 32:
+                case 80:
+                    pause= !pause;
+
+                    break;
+            }
+            reproducirAudioInicio();
+        });
+
+        //el animation
+        window.requestAnimationFrame = (function () {
+            return window.requestAnimationFrame ||
+                window.webkitRequestAnimationFrame ||
+                window.mozRequestAnimationFrame ||
+                function (callback) {
+                    window.setTimeout(callback, 17);
+                };
+        }());
+
+
+
+        window.requestAnimationFrame(update);
+    </script>
+</body>
+</html>
+</body>
+</html>
