@@ -7,18 +7,17 @@
     <link rel="icon" href="MsPacman.png">
     <style>
         body {
-            background-color: black;
+            background-color: gray;
+            display: flex;
+            justify-content: center;
         }
+        
     </style>
 </head>
 <body>
     <canvas id="myCanvas" width="1000" height="1000"></canvas>
     <script>
-        function random_rgba() {
-            const o = Math.round, r = Math.random, s = 255;
-            return 'rgba(' + o(r() * s) + ',' + o(r() * s) + ',' + o(r() * s) + ',' + r().toFixed(1) + ')';
-        }
-
+       
         function getRandomInt(max) {
             return Math.floor(Math.random() * max);
         }
@@ -30,10 +29,13 @@
         let dir = 0;
         let cuadradoX = 650;
         let cuadradoY = 650;
+        let contadorDeFrames=0;
         let pause= false;
         let score =0;
         let image= new Image;
-        image.src="Pacman.png";
+        image.src="Pacman.png"; 
+        let imageP2= new Image;
+        imageP2.src="Pacman2.png";
         let cereza= new Image;
         let fresa= new Image;
         let manzana= new Image;
@@ -60,29 +62,64 @@
         let ultimoUpdate = 0;
         let tiempoIncremento=1000;
         let usuarioInteractuado = false;
+        sirenaRemix.volume = 0.1;
+        sirena.volume = 0.5;
+        inicio.volume= 0.6;
 
-        
         //arreglo frutas aleatorias y sguidor de fruta actual
         const frutas = [cereza, fresa, manzana, melon, naranja];
         let frutaActual = obtenerFrutaAleatoria();
 
         //Paredes
         const paredes = [
+
+            //paredes limite arriba y abajooo
             { x: 100, y: 1, ancho: 800, alto: 25 },
             { x: 100, y: 975, ancho: 800, alto: 25 },
+
+            //paredes camino arriba
+            { x: 100, y: 100, ancho: 25, alto: 200 },
+            { x: 875, y: 100, ancho: 25, alto: 200 },
+
+            //paredes camino abajo
+            { x: 100, y: 700, ancho: 25, alto: 150 },
+            { x: 875, y: 700, ancho: 25, alto: 150 },
+
+            //Cuadros arriba
+            { x: 300, y: 100, ancho: 25, alto: 200 },
+            { x: 675, y: 100, ancho: 25, alto: 200 },
+
+            //cuadros abajo
+            { x: 300, y: 700, ancho: 25, alto: 150 },
+            { x: 675, y: 700, ancho: 25, alto: 150 },
 
             //Jugador no quedar atrapado fuera del mapa
             { x: 100, y: -26, ancho: 800, alto: 25 },
             { x: 100, y: 1000, ancho: 800, alto: 25 },
-            
-            { x: 0, y: 0, ancho: 25, alto: 470 },
+
+            //paredes limite izquierda
+            { x: 0, y: 0, ancho: 25, alto: 465 },
             { x: 0, y: 550, ancho: 25, alto: 460 },
+
+            //paredes tubo izquierda
+            { x: 25, y: 440, ancho: 150, alto: 25 },
+            { x: 25, y: 550, ancho: 150, alto: 25 },
+
+             //paredes spawn
+             { x: 350, y: 440, ancho: 300, alto: 25 },
+            { x: 350, y: 550, ancho: 300, alto: 25 },
+            
+            //paredees tubo derecha
+            { x: 825, y: 440, ancho: 150, alto: 25 },
+            { x: 825, y: 550, ancho: 150, alto: 25 },
+
 
             //Jugador no quedar atrapado fuera del mapa
             { x: -26, y: 0, ancho: 25, alto: 470 },
             { x: -26, y: 550, ancho: 25, alto: 460 },
 
-            { x: 975, y: 0, ancho: 25, alto: 470 },
+            //paredes limite dercha
+            { x: 975, y: 0, ancho: 25, alto: 465 },
             { x: 975, y: 550, ancho: 25, alto: 460 },
 
             //Jugador no quedar atrapado fuera del mapa
@@ -92,60 +129,56 @@
 
         //fruta aleatoria
         function obtenerFrutaAleatoria() {
-        const fruitAleatoria = getRandomInt(frutas.length);
-        return frutas[fruitAleatoria];
-}
+            const fruitAleatoria = getRandomInt(frutas.length);
+            return frutas[fruitAleatoria];
+        }
 
-        //score 
+        //score
         function dibujarScore() {
             ctx.strokeStyle = "rgba(0, 69, 255, 0.8)";
             ctx.lineWidth = 1;
             ctx.stroke();
             ctx.font = "20px Arial";
-            ctx.fillStyle = "black";
+            ctx.fillStyle = "white";
             ctx.fillText("Score: " + score, 35, 48);
             ctx.strokeText("Score: " + score, 35, 48);
         }
+
         //tiempo
         function dibujarTiempo(){
-        ctx.strokeStyle = "rgba(0, 69, 255, 0.8)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.font = "20px Arial";
-        ctx.fillStyle = "black";
-        ctx.fillText("Tiempo: " + formatearTiempo(tiempoTotalSegundos), 850, 48);
-        ctx.strokeText("Tiempo: " + formatearTiempo(tiempoTotalSegundos), 850, 48);
+            ctx.strokeStyle = "rgba(0, 69, 255, 0.8)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.font = "20px Arial";
+            ctx.fillStyle = "white";
+            ctx.fillText("Tiempo: " + formatearTiempo(tiempoTotalSegundos), 850, 48);
+            ctx.strokeText("Tiempo: " + formatearTiempo(tiempoTotalSegundos), 850, 48);
         }
-
-       
 
         //repaint y pausa
         function repaint() {
-    
-        ctx.clearRect(0, 0, 1000, 1000);
 
-    
-    if (!pause) {
-        ctx.fillStyle = "white";
-        ctx.fillRect(0, 0, 1000, 1000);
-    } else {
-        
-        ctx.fillStyle = "rgba(51, 51, 51, 0.8)";
-        ctx.fillRect(0, 0, 1000, 1000);
+            ctx.clearRect(0, 0, 1000, 1000);
 
-        
-    }
+            if (!pause) {
+                ctx.fillStyle = "black";
+                ctx.fillRect(0, 0, 1000, 1000);
+            } else {
 
-    
-    dibujarScore();
-    dibujarTiempo();
- 
-    if (pause) {
-        ctx.font = "50px Arial";
-        ctx.fillStyle = "white"; 
-        ctx.fillText("Pause", 400, 500);
-    }
-}
+                ctx.fillStyle = "rgba(51, 51, 51, 0.8)";
+                ctx.fillRect(0, 0, 1000, 1000);
+
+            }
+
+            dibujarScore();
+            dibujarTiempo();
+
+            if (pause) {
+                ctx.font = "50px Arial";
+                ctx.fillStyle = "white";
+                ctx.fillText("Pause", 400, 500);
+            }
+        }
 
         //dibujar cuadrado paredes
         function dibujarCuadrado(x, y, ancho, alto, color) {
@@ -159,49 +192,75 @@
         }
 
         function formatearTiempo(segundos) {
-    const minutos = Math.floor(segundos / 60);
-    const segundosRestantes = segundos % 60;
-    return minutos + ":" + (segundosRestantes < 10 ? "0" : "") + segundosRestantes;
-}
+            const minutos = Math.floor(segundos / 60);
+            const segundosRestantes = segundos % 60;
+            return minutos + ":" + (segundosRestantes < 10 ? "0" : "") + segundosRestantes;
+        }
 
         //dibujar frutas
         function dibujarObjetivo(x, y, ancho, alto) {
-
             ctx.drawImage(frutaActual, x, y, ancho, alto);
         }
 
-        //dibujar pacma
+let flag=false;
 
-        function dibujarJugador(x, y) {
-            ctx.drawImage(image, x, y, 50, 50);
+    //dibujar pacman
+    function dibujarPacman(x, y) {
+    contadorDeFrames++;
+    if(contadorDeFrames>20){
+        contadorDeFrames=0;
+        if(!flag){
+        image.src="Pacman2.png";
+        flag=true;
+        }else{
+        image.src="Pacman.png";
+        flag=false;
         }
 
-        //validar si pacman toca algo
+    }
+    let rotation = 0;
+    switch (dir) {
+        case 87: // W
+            rotation = 1.5 * Math.PI; 
+            break;
+        case 83: // S
+            rotation = 0.5 * Math.PI; 
+            break;
+        case 65: // A
+            rotation = Math.PI; 
+            break;
+        case 68: // D
+            rotation = 0; 
+            break;
+    }
+    
+    ctx.save();
+    ctx.translate(x, y); 
+    ctx.rotate(rotation);
+    ctx.drawImage(image, -25, -25, 50, 50); 
+    ctx.restore();
+}
+
+
+        // validar si pacman toca algo
         function seTocan(x1, y1, w1, h1, x2, y2, w2, h2) {
             return (
                 x1 < x2 + w2 &&
                 x1 + w1 > x2 &&
                 y1 < y2 + h2 &&
                 y1 + h1 > y2
-                
             );
-           
         }
-        
-        //audioInteractuar
+
+        // audio al interactuar
         function reproducirAudioInicio() {
-    if (!usuarioInteractuado) {
-        inicio.play();
-        usuarioInteractuado = true;
-    }
-}
+            if (!usuarioInteractuado) {
+                inicio.play();
+                usuarioInteractuado = true;
+            }
+        }
 
-document.body.addEventListener("click", reproducirAudioInicio);
-
-
-
-
-
+        document.body.addEventListener("click", reproducirAudioInicio);
 
         function generarCoordenadasFruta() {
             let frutaX, frutaY;
@@ -212,114 +271,108 @@ document.body.addEventListener("click", reproducirAudioInicio);
             return { x: frutaX, y: frutaY };
         }
 
-
         function colisionaConParedes(x, y, ancho, alto) {
-    for (const pared of paredes) {
-        if (
-            x + ancho > pared.x &&
-            x < pared.x + pared.ancho &&
-            y + alto > pared.y &&
-            y < pared.y + pared.alto
-        ) {
-            return true;
+            for (const pared of paredes) {
+                if (
+                    x + ancho > pared.x &&
+                    x < pared.x + pared.ancho &&
+                    y + alto > pared.y &&
+                    y < pared.y + pared.alto
+                ) {
+                    return true;
+                }
+            }
+            return false;
         }
-    }
-    return false;
-}
 
         function verificarColisionConFruta() {
             const coordenadasFruta = generarCoordenadasFruta();
             const frutaX = coordenadasFruta.x;
             const frutaY = coordenadasFruta.y;
 
-
             if (hayColisionParedes(frutaX, frutaY, cuadradoAncho, cuadradoAlto)) {
-                
                 console.log("La fruta colisionó con una pared");
             }
         }
 
-        //update con pausas, colision paredes y volver al mapa
+        // update con pausas, colision paredes y volver al mapa
         function update() {
-            
-            //tiempo
-            const currentTime = Date.now();
-            const deltaTime = currentTime - ultimoUpdate; 
-
+            // tiempo
+            const tiempoActual = Date.now();
+            const deltaTime = tiempoActual - ultimoUpdate;
 
             const tiempoInicialFormateado = formatearTiempo(tiempoTotalSegundos);
             if (deltaTime >= tiempoIncremento) {
-            tiempoTotalSegundos += 1;
-            ultimoUpdate = currentTime;
-    }
-
-         
-            repaint();
-            if(!pause){
-
-            switch (dir) {
-                case 87:
-                    if (!hayColisionParedes(x, y - 10, 50, 50)) {
-                        y -= 10;
-                        if (y < 0) { y = 1000 }
-                    }
-                    break;
-
-                case 83:
-                    if (!hayColisionParedes(x, y + 10, 50, 50)) {
-                        y += 10;
-                        if (y > 1000) { y = 0 }
-                    }
-                    break;
-
-                case 65:
-                    if (!hayColisionParedes(x - 10, y, 50, 50)) {
-                        x -= 10;
-                        if (x < 0) { x = 1000 }
-                    }
-                    break;
-
-                case 68:
-                    if (!hayColisionParedes(x + 10, y, 50, 50)) {
-                        x += 10;
-                        if (x > 1000) { x = 0 }
-                    }
-                    break;
-                }
-
-                
-            inicio.addEventListener("ended", function() {
-            sirena.play();
-            });
-            sirena.addEventListener("ended", function() {
-            sirenaRemix.play();
-            });
-            sirenaRemix.addEventListener("ended", function() {
-            this.currentTime = 0; 
-            this.play(); 
-            });
-           
-            generarCoordenadasFruta();
-
+                tiempoTotalSegundos += 1;
+                ultimoUpdate = tiempoActual;
             }
 
-           
+            repaint();
+            if (!pause) {
+                switch (dir) {
+                    case 87: // w
+                        if (!hayColisionParedes(x, y - 10, 50, 50)) {
+                            y -= 5;
+                           
+                            if (y < 0) { y = 1000 }
+                        }
+                        break;
+                    case 83: // s
+                        if (!hayColisionParedes(x, y + 10, 50, 50)) {
+                            y += 5;
+                            
+                            if (y > 1000) { y = 0 }
+                        }
+                        break;
+                    case 65: // a
+                        if (!hayColisionParedes(x - 10, y, 50, 50)) {
+                            x -= 5;
+                            
+                            if (x < 0) { x = 1000 }
+                        }
+                        break;
+                    case 68: // d
+                        if (!hayColisionParedes(x + 10, y, 50, 50)) {
+                            x += 5;
+                            
+                            if (x > 1000) { x = 0 }
+                        }
+                        break;
+                    default:
+                
+                        break;
+                }
 
-            //Si se tocan pacman y frutas
+                inicio.addEventListener("ended", function () {
+                    sirena.play();
+                });
+                sirena.addEventListener("ended", function () {
+                    sirenaRemix.play();
+                });
+                sirenaRemix.addEventListener("ended", function () {
+                    this.currentTime = 0;
+                    this.play();
+                });
+
+                generarCoordenadasFruta();
+            }
+
+            // Si se tocan pacman y frutas
             if (seTocan(x, y, 50, 50, cuadradoX, cuadradoY, cuadradoAncho, cuadradoAlto)) {
                 cuadradoX = getRandomInt(960);
                 cuadradoY = getRandomInt(960);
-                score +=10;
+                score += 10;
                 comiendo.play();
 
                 frutaActual = obtenerFrutaAleatoria();
+                dibujarObjetivo(cuadradoX, cuadradoY, cuadradoAncho, cuadradoAlto);
             }
 
-            //spawn del pacman y frutas
-            dibujarJugador(x, y);
+            // spawn del pacman y frutas
+            dibujarPacman(x+18, y+18, 20, 0 , Math.PI * 2 );
             dibujarObjetivo(cuadradoX, cuadradoY, cuadradoAncho, cuadradoAlto);
 
-            //dibujar paredes
+            // dibujar paredes
             for (const pared of paredes) {
                 dibujarCuadrado(pared.x, pared.y, pared.ancho, pared.alto, "black");
             }
@@ -327,8 +380,7 @@ document.body.addEventListener("click", reproducirAudioInicio);
             window.requestAnimationFrame(update);
         }
 
-
-        //colision con paredes
+        // colision con paredes
         function hayColisionParedes(x, y, ancho, alto) {
             for (const pared of paredes) {
                 if (seTocan(x, y, ancho, alto, pared.x, pared.y, pared.ancho, pared.alto)) {
@@ -338,30 +390,25 @@ document.body.addEventListener("click", reproducirAudioInicio);
             return false;
         }
 
-        //los  pausas y movimientos
+        // los pausas y movimientos
         document.addEventListener("keydown", (e) => {
-            console.log(e);
-
             switch (e.keyCode) {
-               
-                case 87:
-                case 83:
-                case 65:
-                case 68:
-                if(!pause) dir=e.keyCode;
+                case 87: // W
+                case 83: // S
+                case 65: // A
+                case 68: // D
+                    if (!pause) dir = e.keyCode;
                     break;
-
-                case 27:
-                case 32:
-                case 80:
-                    pause= !pause;
-
+                case 27: // esc
+                case 32: // esp
+                case 80: // p :v
+                    pause = !pause;
                     break;
             }
             reproducirAudioInicio();
         });
 
-        //el animation
+        // el animation
         window.requestAnimationFrame = (function () {
             return window.requestAnimationFrame ||
                 window.webkitRequestAnimationFrame ||
@@ -371,11 +418,7 @@ document.body.addEventListener("click", reproducirAudioInicio);
                 };
         }());
 
-
-
         window.requestAnimationFrame(update);
     </script>
-</body>
-</html>
 </body>
 </html>
