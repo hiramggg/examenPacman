@@ -41,6 +41,8 @@
         let manzana= new Image;
         let melon= new Image;
         let naranja= new Image;
+        let puntito= new Image;
+        puntito.src="puntito.png";
         fresa.src="fresa.png";
         cereza.src="cereza.png";
         manzana.src="manzana.png";
@@ -48,6 +50,8 @@
         naranja.src="naranjasupongo.png";
         let comiendo= new Audio;
         comiendo.src="pacmaneating.mp3";
+        let waka= new Audio;
+        waka.src="waka.mp3";
         let sirena= new Audio;
         sirena.src="pacman-siren.mp3";
         let sirenaRemix= new Audio;
@@ -127,11 +131,48 @@
             { x: 1005, y: 550, ancho: 25, alto: 460 },
         ];
 
-        //fruta aleatoria
-        function obtenerFrutaAleatoria() {
+          //fruta aleatoria
+          function obtenerFrutaAleatoria() {
             const fruitAleatoria = getRandomInt(frutas.length);
             return frutas[fruitAleatoria];
         }
+
+        //arreglo de puntitos
+        const puntitos = [
+            //3 arriba
+            { x: 190, y: 180, ancho: 50, alto: 50 },
+            { x: 480, y: 180, ancho: 50, alto: 50 },
+            { x: 770, y: 180, ancho: 50, alto: 50 },
+            //3abajo
+            { x: 190, y: 750, ancho: 50, alto: 50 },
+            { x: 480, y: 750, ancho: 50, alto: 50 },
+            { x: 770, y: 750, ancho: 50, alto: 50 },
+            //medio
+            { x: 60, y: 480, ancho: 50, alto: 50 },
+            { x: 900, y: 480, ancho: 50, alto: 50 },
+            //portals abajo
+            { x: 40, y: 900, ancho: 50, alto: 50 },
+            { x: 910, y: 900, ancho: 50, alto: 50 },
+            //portalse arriba
+            { x: 40, y: 50, ancho: 50, alto: 50 },
+            { x: 910, y: 50, ancho: 50, alto: 50 },
+
+            { x: 260, y: 480, ancho: 50, alto: 50 },
+            { x: 700, y: 480, ancho: 50, alto: 50 },
+
+            { x: 260, y: 580, ancho: 50, alto: 50 },
+            { x: 700, y: 580, ancho: 50, alto: 50 },
+
+            { x: 260, y: 380, ancho: 50, alto: 50 },
+            { x: 700, y: 380, ancho: 50, alto: 50 },
+
+            { x: 480, y: 380, ancho: 50, alto: 50 },
+            { x: 480, y: 580, ancho: 50, alto: 50 },
+
+            { x: 480, y: 50, ancho: 50, alto: 50 },
+            { x: 480, y: 900, ancho: 50, alto: 50 },
+
+        ];
 
         //score
         function dibujarScore() {
@@ -202,45 +243,49 @@
             ctx.drawImage(frutaActual, x, y, ancho, alto);
         }
 
-let flag=false;
-
-    //dibujar pacman
-    function dibujarPacman(x, y) {
-    contadorDeFrames++;
-    if(contadorDeFrames>20){
-        contadorDeFrames=0;
-        if(!flag){
-        image.src="Pacman2.png";
-        flag=true;
-        }else{
-        image.src="Pacman.png";
-        flag=false;
+        //dibujar Puntitos Hoxy?!?!
+        function dibujarPuntitos(x, y, ancho, alto){
+            ctx.drawImage(puntito, x, y, ancho, alto);
         }
 
-    }
-    let rotation = 0;
-    switch (dir) {
-        case 87: // W
-            rotation = 1.5 * Math.PI; 
-            break;
-        case 83: // S
-            rotation = 0.5 * Math.PI; 
-            break;
-        case 65: // A
-            rotation = Math.PI; 
-            break;
-        case 68: // D
-            rotation = 0; 
-            break;
-    }
-    
-    ctx.save();
-    ctx.translate(x, y); 
-    ctx.rotate(rotation);
-    ctx.drawImage(image, -25, -25, 50, 50); 
-    ctx.restore();
-}
+        let flag=false;
 
+        //dibujar pacman
+        function dibujarPacman(x, y) {
+            contadorDeFrames++;
+            if(contadorDeFrames>20){
+                contadorDeFrames=0;
+                if(!flag){
+                    image.src="Pacman2.png";
+                    flag=true;
+                }else{
+                    image.src="Pacman.png";
+                    flag=false;
+                }
+
+            }
+            let rotation = 0;
+            switch (dir) {
+                case 87: // W
+                    rotation = 1.5 * Math.PI; 
+                    break;
+                case 83: // S
+                    rotation = 0.5 * Math.PI; 
+                    break;
+                case 65: // A
+                    rotation = Math.PI; 
+                    break;
+                case 68: // D
+                    rotation = 0; 
+                    break;
+            }
+            
+            ctx.save();
+            ctx.translate(x, y); 
+            ctx.rotate(rotation);
+            ctx.drawImage(image, -25, -25, 50, 50); 
+            ctx.restore();
+        }
 
         // validar si pacman toca algo
         function seTocan(x1, y1, w1, h1, x2, y2, w2, h2) {
@@ -364,13 +409,38 @@ let flag=false;
                 score += 10;
                 comiendo.play();
 
+                // Eliminar el puntito tocadop
+                for (let i = 0; i < puntitos.length; i++) {
+                    if (seTocan(x, y, 50, 50, puntitos[i].x, puntitos[i].y, puntitos[i].ancho, puntitos[i].alto)) {
+                        puntitos.splice(i, 1);
+                        break; 
+                    }
+                }
+
                 frutaActual = obtenerFrutaAleatoria();
                 dibujarObjetivo(cuadradoX, cuadradoY, cuadradoAncho, cuadradoAlto);
             }
+            for (let i = 0; i < puntitos.length; i++) {
+                if (seTocan(x, y, 50, 50, puntitos[i].x, puntitos[i].y, puntitos[i].ancho, puntitos[i].alto)) {
+                    puntitos.splice(i, 1);
+                    score += 2;
+                    waka.play();
+                    break; 
+                }
+            }
+            for (const puntitoCoordenadas of puntitos) {
+                dibujarPuntitos(puntitoCoordenadas.x, puntitoCoordenadas.y, puntitoCoordenadas.ancho, puntitoCoordenadas.alto);
+            }
+
 
             // spawn del pacman y frutas
             dibujarPacman(x+18, y+18, 20, 0 , Math.PI * 2 );
             dibujarObjetivo(cuadradoX, cuadradoY, cuadradoAncho, cuadradoAlto);
+
+            //dibujar puntitos restantes
+            for (const puntitoCoordenadas of puntitos) {
+                dibujarPuntitos(puntitoCoordenadas.x, puntitoCoordenadas.y, puntitoCoordenadas.ancho, puntitoCoordenadas.alto);
+            }
 
             // dibujar paredes
             for (const pared of paredes) {
