@@ -70,6 +70,103 @@
         sirena.volume = 0.5;
         inicio.volume= 0.6;
 
+        let velocidadJugador = 5;
+
+           // Imágenes de enemigos
+           let enemigo1Image = new Image();
+        enemigo1Image.src = "enemigo1.png";
+
+        let enemigo2Image = new Image();
+        enemigo2Image.src = "enemigo2.png";
+
+        let enemigo3Image = new Image();
+        enemigo3Image.src = "enemigo3.png";
+
+        let enemigo4Image = new Image();
+        enemigo4Image.src = "enemigo4.png";
+
+        // Posiciones iniciales de los enemigos
+        let enemigo1X = 100;
+        let enemigo1Y = 100;
+
+        let enemigo2X = 900;
+        let enemigo2Y = 100;
+
+        let enemigo3X = 100;
+        let enemigo3Y = 900;
+
+        let enemigo4X = 900;
+        let enemigo4Y = 900;
+
+        // Velocidad enemigos 
+        let enemigoVelocidad = 1;
+
+        // enemigo hacia el jugador
+        function moverEnemigoHaciaJugador(enemigoX, enemigoY, jugadorX, jugadorY) {
+            const dx = jugadorX - enemigoX;
+            const dy = jugadorY - enemigoY;
+            const distancia = Math.sqrt(dx * dx + dy * dy);
+            const velocidadX = (dx / distancia) * enemigoVelocidad;
+            const velocidadY = (dy / distancia) * enemigoVelocidad;
+            return { x: enemigoX + velocidadX, y: enemigoY + velocidadY };
+        }
+
+        // colisión E jU
+        function seTocan(objeto1X, objeto1Y, objeto1Ancho, objeto1Alto, objeto2X, objeto2Y, objeto2Ancho, objeto2Alto) {
+            return (
+                objeto1X < objeto2X + objeto2Ancho &&
+                objeto1X + objeto1Ancho > objeto2X &&
+                objeto1Y < objeto2Y + objeto2Alto &&
+                objeto1Y + objeto1Alto > objeto2Y
+            );
+        }
+
+        //reiniciar la posición 
+        function reiniciarJugador() {
+            x = 500;
+            y = 500;
+        }
+
+        function updateEnemigos() {
+            // Mover enemigo 1 AL jugador
+            const nuevaPosicion1 = moverEnemigoHaciaJugador(enemigo1X, enemigo1Y, x, y);
+            enemigo1X = nuevaPosicion1.x;
+            enemigo1Y = nuevaPosicion1.y;
+
+            // enemigo 2 
+            const nuevaPosicion2 = moverEnemigoHaciaJugador(enemigo2X, enemigo2Y, x, y);
+            enemigo2X = nuevaPosicion2.x;
+            enemigo2Y = nuevaPosicion2.y;
+
+            // enemigo 3 
+            const nuevaPosicion3 = moverEnemigoHaciaJugador(enemigo3X, enemigo3Y, x, y);
+            enemigo3X = nuevaPosicion3.x;
+            enemigo3Y = nuevaPosicion3.y;
+
+            // enemigo 4 
+            const nuevaPosicion4 = moverEnemigoHaciaJugador(enemigo4X, enemigo4Y, x, y);
+            enemigo4X = nuevaPosicion4.x;
+            enemigo4Y = nuevaPosicion4.y;
+
+            // Verificar colision
+            if (
+                seTocan(x, y, 50, 50, enemigo1X, enemigo1Y, 50, 50) ||
+                seTocan(x, y, 50, 50, enemigo2X, enemigo2Y, 50, 50) ||
+                seTocan(x, y, 50, 50, enemigo3X, enemigo3Y, 50, 50) ||
+                seTocan(x, y, 50, 50, enemigo4X, enemigo4Y, 50, 50)
+            ) {
+                reiniciarJugador();
+            }
+        }
+
+        function dibujarEnemigos() {
+            ctx.drawImage(enemigo1Image, enemigo1X, enemigo1Y, 50, 50);
+            ctx.drawImage(enemigo2Image, enemigo2X, enemigo2Y, 50, 50);
+            ctx.drawImage(enemigo3Image, enemigo3X, enemigo3Y, 50, 50);
+            ctx.drawImage(enemigo4Image, enemigo4X, enemigo4Y, 50, 50);
+        }
+
+
         //arreglo frutas aleatorias y sguidor de fruta actual
         const frutas = [cereza, fresa, manzana, melon, naranja];
         let frutaActual = obtenerFrutaAleatoria();
@@ -357,28 +454,28 @@
                 switch (dir) {
                     case 87: // w
                         if (!hayColisionParedes(x, y - 10, 50, 50)) {
-                            y -= 5;
+                            y -= velocidadJugador;
                            
                             if (y < 0) { y = 1000 }
                         }
                         break;
                     case 83: // s
                         if (!hayColisionParedes(x, y + 10, 50, 50)) {
-                            y += 5;
+                            y += velocidadJugador;
                             
                             if (y > 1000) { y = 0 }
                         }
                         break;
                     case 65: // a
                         if (!hayColisionParedes(x - 10, y, 50, 50)) {
-                            x -= 5;
+                            x -= velocidadJugador;
                             
                             if (x < 0) { x = 1000 }
                         }
                         break;
                     case 68: // d
                         if (!hayColisionParedes(x + 10, y, 50, 50)) {
-                            x += 5;
+                            x += velocidadJugador;
                             
                             if (x > 1000) { x = 0 }
                         }
@@ -399,6 +496,24 @@
                     this.play();
                 });
 
+                //clic espacio
+                document.addEventListener("keydown", (e) => {
+            if (e.keyCode === 32) { 
+                velocidadJugador = 10; 
+            }
+        });
+
+        // espacio soltar
+        document.addEventListener("keyup", (e) => {
+            if (e.keyCode === 32) { 
+                velocidadJugador = 5; 
+            }
+        });
+
+
+
+                updateEnemigos(); 
+                verificarColisionConFruta(); 
                 generarCoordenadasFruta();
             }
 
@@ -419,6 +534,12 @@
 
                 frutaActual = obtenerFrutaAleatoria();
                 dibujarObjetivo(cuadradoX, cuadradoY, cuadradoAncho, cuadradoAlto);
+
+                if (score % 20 === 0) {
+                enemigoVelocidad += 1; // velocidad de los enemigos ++
+    }
+
+
             }
             for (let i = 0; i < puntitos.length; i++) {
                 if (seTocan(x, y, 50, 50, puntitos[i].x, puntitos[i].y, puntitos[i].ancho, puntitos[i].alto)) {
@@ -435,6 +556,7 @@
 
             // spawn del pacman y frutas
             dibujarPacman(x+18, y+18, 20, 0 , Math.PI * 2 );
+            dibujarEnemigos();
             dibujarObjetivo(cuadradoX, cuadradoY, cuadradoAncho, cuadradoAlto);
 
             //dibujar puntitos restantes
@@ -470,7 +592,6 @@
                     if (!pause) dir = e.keyCode;
                     break;
                 case 27: // esc
-                case 32: // esp
                 case 80: // p :v
                     pause = !pause;
                     break;
