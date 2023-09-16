@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PacMan De Hiram</title>
+    <link rel="icon" href="MsPacman.png">
+    <style>
+        body {
+            background-color: gray;
+            display: flex;
+            justify-content: center;
+        }
+        
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="1000" height="1000"></canvas>
+    <script>
+       
+        function getRandomInt(max) {
+            return Math.floor(Math.random() * max);
+        }
+
+        const canvas = document.getElementById("myCanvas");
+        const ctx = canvas.getContext("2d");
+        let x = 500;
+        let y = 500;
+        let dir = 0;
+        let cuadradoX = 650;
+        let cuadradoY = 650;
+        let contadorDeFrames=0;
+        let pause= false;
+        let score =0;
+        let image= new Image;
+        image.src="Pacman.png"; 
+        let imageP2= new Image;
+        imageP2.src="Pacman2.png";
+        let cereza= new Image;
+        let fresa= new Image;
+        let manzana= new Image;
+        let melon= new Image;
+        let naranja= new Image;
+        let puntito= new Image;
+        puntito.src="puntito.png";
+        fresa.src="fresa.png";
+        cereza.src="cereza.png";
+        manzana.src="manzana.png";
+        melon.src="melon.png";
+        naranja.src="naranjasupongo.png";
+        let comiendo= new Audio;
+        comiendo.src="pacmaneating.mp3";
+        let waka= new Audio;
+        waka.src="waka.mp3";
+        let sirena= new Audio;
+        sirena.src="pacman-siren.mp3";
+        let sirenaRemix= new Audio;
+        sirenaRemix.src="sirenaRemix.mp3";
+        sirenaRemix.loop = true;
+        sirenaRemix.preload = "auto";
+        let inicio= new Audio;
+        inicio.src="pacman-song.mp3";
+        const cuadradoAncho = 40;
+        const cuadradoAlto = 40;
+        let tiempoTotalSegundos = 0;
+        let ultimoUpdate = 0;
+        let tiempoIncremento=1000;
+        let usuarioInteractuado = false;
+        sirenaRemix.volume = 0.1;
+        sirena.volume = 0.5;
+        inicio.volume= 0.6;
+
+        let velocidadJugador = 5;
+
+        // Imágenes de enemigos
+        let enemigo1Image = new Image();
+        enemigo1Image.src = "enemigo1.png";
+
+        let enemigo2Image = new Image();
+        enemigo2Image.src = "enemigo2.png";
+
+        let enemigo3Image = new Image();
+        enemigo3Image.src = "enemigo3.png";
+
+        let enemigo4Image = new Image();
+        enemigo4Image.src = "enemigo4.png";
+
+        // Posiciones iniciales de los enemigos
+        let enemigo1X = 100;
+        let enemigo1Y = 100;
+
+        let enemigo2X = 900;
+        let enemigo2Y = 100;
+
+        let enemigo3X = 100;
+        let enemigo3Y = 900;
+
+        let enemigo4X = 900;
+        let enemigo4Y = 900;
+
+        // Velocidad enemigos 
+        let enemigoVelocidad = 1;
+
+        // enemigo hacia el jugador
+        function moverEnemigoHaciaJugador(enemigoX, enemigoY, jugadorX, jugadorY) {
+            const dx = jugadorX - enemigoX;
+            const dy = jugadorY - enemigoY;
+            const distancia = Math.sqrt(dx * dx + dy * dy);
+            const velocidadX = (dx / distancia) * enemigoVelocidad;
+            const velocidadY = (dy / distancia) * enemigoVelocidad;
+            return { x: enemigoX + velocidadX, y: enemigoY + velocidadY };
+        }
+
+        // colisión E jU
+        function seTocan(objeto1X, objeto1Y, objeto1Ancho, objeto1Alto, objeto2X, objeto2Y, objeto2Ancho, objeto2Alto) {
+            return (
+                objeto1X < objeto2X + objeto2Ancho &&
+                objeto1X + objeto1Ancho > objeto2X &&
+                objeto1Y < objeto2Y + objeto2Alto &&
+                objeto1Y + objeto1Alto > objeto2Y
+            );
+        }
+
+        //reiniciar la posición 
+        function reiniciarJugador() {
+            x = 500;
+            y = 500;
+        }
+
+        function updateEnemigos() {
+            // Mover enemigo 1 AL jugador
+            const nuevaPosicion1 = moverEnemigoHaciaJugador(enemigo1X, enemigo1Y, x, y);
+            enemigo1X = nuevaPosicion1.x;
+            enemigo1Y = nuevaPosicion1.y;
+
+            // enemigo 2 
+            const nuevaPosicion2 = moverEnemigoHaciaJugador(enemigo2X, enemigo2Y, x, y);
+            enemigo2X = nuevaPosicion2.x;
+            enemigo2Y = nuevaPosicion2.y;
+
+            // enemigo 3 
+            const nuevaPosicion3 = moverEnemigoHaciaJugador(enemigo3X, enemigo3Y, x, y);
+            enemigo3X = nuevaPosicion3.x;
+            enemigo3Y = nuevaPosicion3.y;
+
+            // enemigo 4 
+            const nuevaPosicion4 = moverEnemigoHaciaJugador(enemigo4X, enemigo4Y, x, y);
+            enemigo4X = nuevaPosicion4.x;
+            enemigo4Y = nuevaPosicion4.y;
+
+            // Verificar colision
+            if (
+                seTocan(x, y, 50, 50, enemigo1X, enemigo1Y, 50, 50) ||
+                seTocan(x, y, 50, 50, enemigo2X, enemigo2Y, 50, 50) ||
+                seTocan(x, y, 50, 50, enemigo3X, enemigo3Y, 50, 50) ||
+                seTocan(x, y, 50, 50, enemigo4X, enemigo4Y, 50, 50)
+            ) {
+                reiniciarJugador();
+            }
+        }
+
+        function dibujarEnemigos() {
+            ctx.drawImage(enemigo1Image, enemigo1X, enemigo1Y, 50, 50);
+            ctx.drawImage(enemigo2Image, enemigo2X, enemigo2Y, 50, 50);
+            ctx.drawImage(enemigo3Image, enemigo3X, enemigo3Y, 50, 50);
+            ctx.drawImage(enemigo4Image, enemigo4X, enemigo4Y, 50, 50);
+        }
+
+
+        //arreglo frutas aleatorias y sguidor de fruta actual
+        const frutas = [cereza, fresa, manzana, melon, naranja];
+        let frutaActual = obtenerFrutaAleatoria();
+
+        //Paredes
+        const paredes = [
+
+            //paredes limite arriba y abajooo
+            { x: 100, y: 1, ancho: 800, alto: 25 },
+            { x: 100, y: 975, ancho: 800, alto: 25 },
+
+            //paredes camino arriba
+            { x: 100, y: 100, ancho: 25, alto: 200 },
+            { x: 875, y: 100, ancho: 25, alto: 200 },
+
+            //paredes camino abajo
+            { x: 100, y: 700, ancho: 25, alto: 150 },
+            { x: 875, y: 700, ancho: 25, alto: 150 },
+
+            //Cuadros arriba
+            { x: 300, y: 100, ancho: 25, alto: 200 },
+            { x: 675, y: 100, ancho: 25, alto: 200 },
+
+            //cuadros abajo
+            { x: 300, y: 700, ancho: 25, alto: 150 },
+            { x: 675, y: 700, ancho: 25, alto: 150 },
+
+            //Jugador no quedar atrapado fuera del mapa
+            { x: 100, y: -26, ancho: 800, alto: 25 },
+            { x: 100, y: 1000, ancho: 800, alto: 25 },
+
+            //paredes limite izquierda
+            { x: 0, y: 0, ancho: 25, alto: 465 },
+            { x: 0, y: 550, ancho: 25, alto: 460 },
+
+            //paredes tubo izquierda
+            { x: 25, y: 440, ancho: 150, alto: 25 },
+            { x: 25, y: 550, ancho: 150, alto: 25 },
+
+             //paredes spawn
+             { x: 350, y: 440, ancho: 300, alto: 25 },
+            { x: 350, y: 550, ancho: 300, alto: 25 },
+            
+            //paredees tubo derecha
+            { x: 825, y: 440, ancho: 150, alto: 25 },
+            { x: 825, y: 550, ancho: 150, alto: 25 },
+
+
+            //Jugador no quedar atrapado fuera del mapa
+            { x: -26, y: 0, ancho: 25, alto: 470 },
+            { x: -26, y: 550, ancho: 25, alto: 460 },
+
+            //paredes limite dercha
+            { x: 975, y: 0, ancho: 25, alto: 465 },
+            { x: 975, y: 550, ancho: 25, alto: 460 },
+
+            //Jugador no quedar atrapado fuera del mapa
+            { x: 1005, y: 0, ancho: 25, alto: 470 },
+            { x: 1005, y: 550, ancho: 25, alto: 460 },
+        ];
+
+          //fruta aleatoria
+          function obtenerFrutaAleatoria() {
+            const fruitAleatoria = getRandomInt(frutas.length);
+            return frutas[fruitAleatoria];
+        }
+
+        //arreglo de puntitos
+        const puntitos = [
+            //3 arriba
+            { x: 190, y: 180, ancho: 50, alto: 50 },
+            { x: 480, y: 180, ancho: 50, alto: 50 },
+            { x: 770, y: 180, ancho: 50, alto: 50 },
+            //3abajo
+            { x: 190, y: 750, ancho: 50, alto: 50 },
+            { x: 480, y: 750, ancho: 50, alto: 50 },
+            { x: 770, y: 750, ancho: 50, alto: 50 },
+            //medio
+            { x: 60, y: 480, ancho: 50, alto: 50 },
+            { x: 900, y: 480, ancho: 50, alto: 50 },
+            //portals abajo
+            { x: 40, y: 900, ancho: 50, alto: 50 },
+            { x: 910, y: 900, ancho: 50, alto: 50 },
+            //portalse arriba
+            { x: 40, y: 50, ancho: 50, alto: 50 },
+            { x: 910, y: 50, ancho: 50, alto: 50 },
+
+            { x: 260, y: 480, ancho: 50, alto: 50 },
+            { x: 700, y: 480, ancho: 50, alto: 50 },
+
+            { x: 260, y: 580, ancho: 50, alto: 50 },
+            { x: 700, y: 580, ancho: 50, alto: 50 },
+
+            { x: 260, y: 380, ancho: 50, alto: 50 },
+            { x: 700, y: 380, ancho: 50, alto: 50 },
+
+            { x: 480, y: 380, ancho: 50, alto: 50 },
+            { x: 480, y: 580, ancho: 50, alto: 50 },
+
+            { x: 480, y: 50, ancho: 50, alto: 50 },
+            { x: 480, y: 900, ancho: 50, alto: 50 },
+
+        ];
+
+        //score
+        function dibujarScore() {
+            ctx.strokeStyle = "rgba(0, 69, 255, 0.8)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.font = "20px Arial";
+            ctx.fillStyle = "white";
+            ctx.fillText("Score: " + score, 35, 48);
+            ctx.strokeText("Score: " + score, 35, 48);
+        }
+
+        //tiempo
+        function dibujarTiempo(){
+            ctx.strokeStyle = "rgba(0, 69, 255, 0.8)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.font = "20px Arial";
+            ctx.fillStyle = "white";
+            ctx.fillText("Tiempo: " + formatearTiempo(tiempoTotalSegundos), 850, 48);
+            ctx.strokeText("Tiempo: " + formatearTiempo(tiempoTotalSegundos), 850, 48);
+        }
+
+        //repaint y pausa
+        function repaint() {
+
+            ctx.clearRect(0, 0, 1000, 1000);
+
+            if (!pause) {
+                ctx.fillStyle = "black";
+                ctx.fillRect(0, 0, 1000, 1000);
+            } else {
+
+                ctx.fillStyle = "rgba(51, 51, 51, 0.8)";
+                ctx.fillRect(0, 0, 1000, 1000);
+
+            }
+
+            dibujarScore();
+            dibujarTiempo();
+
+            if (pause) {
+                ctx.font = "50px Arial";
+                ctx.fillStyle = "white";
+                ctx.fillText("Pause", 400, 500);
+            }
+        }
+
+        //dibujar cuadrado paredes
+        function dibujarCuadrado(x, y, ancho, alto, color) {
+            ctx.beginPath();
+            ctx.rect(x, y, ancho, alto);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = "rgba(0, 69, 255, 0.8)";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+
+        function formatearTiempo(segundos) {
+            const minutos = Math.floor(segundos / 60);
+            const segundosRestantes = segundos % 60;
+            return minutos + ":" + (segundosRestantes < 10 ? "0" : "") + segundosRestantes;
+        }
+
+        //dibujar frutas
+        function dibujarObjetivo(x, y, ancho, alto) {
+            ctx.drawImage(frutaActual, x, y, ancho, alto);
+        }
+
+        //dibujar Puntitos Hoxy?!?!
+        function dibujarPuntitos(x, y, ancho, alto){
+            ctx.drawImage(puntito, x, y, ancho, alto);
+        }
+
+        let flag=false;
+
+        //dibujar pacman
+        function dibujarPacman(x, y) {
+            contadorDeFrames++;
+            if(contadorDeFrames>20){
+                contadorDeFrames=0;
+                if(!flag){
+                    image.src="Pacman2.png";
+                    flag=true;
+                }else{
+                    image.src="Pacman.png";
+                    flag=false;
+                }
+
+            }
+            let rotation = 0;
+            switch (dir) {
+                case 87: // W
+                    rotation = 1.5 * Math.PI; 
+                    break;
+                case 83: // S
+                    rotation = 0.5 * Math.PI; 
+                    break;
+                case 65: // A
+                    rotation = Math.PI; 
+                    break;
+                case 68: // D
+                    rotation = 0; 
+                    break;
+            }
+            
+            ctx.save();
+            ctx.translate(x, y); 
+            ctx.rotate(rotation);
+            ctx.drawImage(image, -25, -25, 50, 50); 
+            ctx.restore();
+        }
+
+        // validar si pacman toca algo
+        function seTocan(x1, y1, w1, h1, x2, y2, w2, h2) {
+            return (
+                x1 < x2 + w2 &&
+                x1 + w1 > x2 &&
+                y1 < y2 + h2 &&
+                y1 + h1 > y2
+            );
+        }
+
+        // audio al interactuar
+        function reproducirAudioInicio() {
+            if (!usuarioInteractuado) {
+                inicio.play();
+                usuarioInteractuado = true;
+            }
+        }
+
+        document.body.addEventListener("click", reproducirAudioInicio);
+
+        function generarCoordenadasFruta() {
+            let frutaX, frutaY;
+            do {
+                frutaX = getRandomInt(960);
+                frutaY = getRandomInt(960);
+            } while (colisionaConParedes(frutaX, frutaY, cuadradoAncho, cuadradoAlto));
+            return { x: frutaX, y: frutaY };
+        }
+
+        function colisionaConParedes(x, y, ancho, alto) {
+            for (const pared of paredes) {
+                if (
+                    x + ancho > pared.x &&
+                    x < pared.x + pared.ancho &&
+                    y + alto > pared.y &&
+                    y < pared.y + pared.alto
+                ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function verificarColisionConFruta() {
+            const coordenadasFruta = generarCoordenadasFruta();
+            const frutaX = coordenadasFruta.x;
+            const frutaY = coordenadasFruta.y;
+
+            if (hayColisionParedes(frutaX, frutaY, cuadradoAncho, cuadradoAlto)) {
+                console.log("La fruta colisionó con una pared");
+            }
+        }
+
+        // update con pausas, colision paredes y volver al mapa
+        function update() {
+            // tiempo
+            const tiempoActual = Date.now();
+            const deltaTime = tiempoActual - ultimoUpdate;
+
+            const tiempoInicialFormateado = formatearTiempo(tiempoTotalSegundos);
+            if (deltaTime >= tiempoIncremento) {
+                tiempoTotalSegundos += 1;
+                ultimoUpdate = tiempoActual;
+            }
+
+            repaint();
+            if (!pause) {
+                switch (dir) {
+                    case 87: // w
+                        if (!hayColisionParedes(x, y - 10, 50, 50)) {
+                            y -= velocidadJugador;
+                           
+                            if (y < 0) { y = 1000 }
+                        }
+                        break;
+                    case 83: // s
+                        if (!hayColisionParedes(x, y + 10, 50, 50)) {
+                            y += velocidadJugador;
+                            
+                            if (y > 1000) { y = 0 }
+                        }
+                        break;
+                    case 65: // a
+                        if (!hayColisionParedes(x - 10, y, 50, 50)) {
+                            x -= velocidadJugador;
+                            
+                            if (x < 0) { x = 1000 }
+                        }
+                        break;
+                    case 68: // d
+                        if (!hayColisionParedes(x + 10, y, 50, 50)) {
+                            x += velocidadJugador;
+                            
+                            if (x > 1000) { x = 0 }
+                        }
+                        break;
+                    default:
+                
+                        break;
+                }
+
+                inicio.addEventListener("ended", function () {
+                    sirena.play();
+                });
+                sirena.addEventListener("ended", function () {
+                    sirenaRemix.play();
+                });
+                sirenaRemix.addEventListener("ended", function () {
+                    this.currentTime = 0;
+                    this.play();
+                });
+
+                //clic espacio
+                document.addEventListener("keydown", (e) => {
+            if (e.keyCode === 32) { 
+                velocidadJugador = 10; 
+            }
+        });
+
+        // espacio soltar
+        document.addEventListener("keyup", (e) => {
+            if (e.keyCode === 32) { 
+                velocidadJugador = 5; 
+            }
+        });
+
+
+
+                updateEnemigos(); 
+                verificarColisionConFruta(); 
+                generarCoordenadasFruta();
+            }
+
+            // Si se tocan pacman y frutas
+            if (seTocan(x, y, 50, 50, cuadradoX, cuadradoY, cuadradoAncho, cuadradoAlto)) {
+                cuadradoX = getRandomInt(960);
+                cuadradoY = getRandomInt(960);
+                score += 10;
+                comiendo.play();
+
+                // Eliminar el puntito tocadop
+                for (let i = 0; i < puntitos.length; i++) {
+                    if (seTocan(x, y, 50, 50, puntitos[i].x, puntitos[i].y, puntitos[i].ancho, puntitos[i].alto)) {
+                        puntitos.splice(i, 1);
+                        break; 
+                    }
+                }
+
+                frutaActual = obtenerFrutaAleatoria();
+                dibujarObjetivo(cuadradoX, cuadradoY, cuadradoAncho, cuadradoAlto);
+
+                if (score % 20 === 0) {
+                enemigoVelocidad += 2; // velocidad de los enemigos ++
+    }
+
+
+            }
+            for (let i = 0; i < puntitos.length; i++) {
+                if (seTocan(x, y, 50, 50, puntitos[i].x, puntitos[i].y, puntitos[i].ancho, puntitos[i].alto)) {
+                    puntitos.splice(i, 1);
+                    score += 2;
+                    waka.play();
+                    break; 
+                }
+            }
+            for (const puntitoCoordenadas of puntitos) {
+                dibujarPuntitos(puntitoCoordenadas.x, puntitoCoordenadas.y, puntitoCoordenadas.ancho, puntitoCoordenadas.alto);
+            }
+
+
+            // spawn del pacman y frutas
+            dibujarPacman(x+18, y+18, 20, 0 , Math.PI * 2 );
+            dibujarEnemigos();
+            dibujarObjetivo(cuadradoX, cuadradoY, cuadradoAncho, cuadradoAlto);
+
+            //dibujar puntitos restantes
+            for (const puntitoCoordenadas of puntitos) {
+                dibujarPuntitos(puntitoCoordenadas.x, puntitoCoordenadas.y, puntitoCoordenadas.ancho, puntitoCoordenadas.alto);
+            }
+
+            // dibujar paredes
+            for (const pared of paredes) {
+                dibujarCuadrado(pared.x, pared.y, pared.ancho, pared.alto, "black");
+            }
+
+            window.requestAnimationFrame(update);
+        }
+
+        // colision con paredes
+        function hayColisionParedes(x, y, ancho, alto) {
+            for (const pared of paredes) {
+                if (seTocan(x, y, ancho, alto, pared.x, pared.y, pared.ancho, pared.alto)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // los pausas y movimientos
+        document.addEventListener("keydown", (e) => {
+            switch (e.keyCode) {
+                case 87: // W
+                case 83: // S
+                case 65: // A
+                case 68: // D
+                    if (!pause) dir = e.keyCode;
+                    break;
+                case 27: // esc
+                case 80: // p :v
+                    pause = !pause;
+                    break;
+            }
+            reproducirAudioInicio();
+        });
+
+        // el animation
+        window.requestAnimationFrame = (function () {
+            return window.requestAnimationFrame ||
+                window.webkitRequestAnimationFrame ||
+                window.mozRequestAnimationFrame ||
+                function (callback) {
+                    window.setTimeout(callback, 17);
+                };
+        }());
+
+        window.requestAnimationFrame(update);
+    </script>
+</body>
+</html>
